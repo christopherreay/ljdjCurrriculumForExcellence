@@ -1,0 +1,214 @@
+ljdj = {};
+ljdj.init = function()
+{ var countKeys = function(o)
+  { count = 0;
+    for (p in o)
+    { if (o.hasOwnProperty(p))
+      { count++;
+      }
+    }
+    return count;
+  }
+
+  var vis = d3.select("#displayLJDJ").append("svg")
+  var pi = Math.PI;
+
+  var achievementLevels = 
+      { developing: 0.4, 
+        consolidating: 0.6,
+        secure: 0.8
+      };
+  styleDict = {};
+
+  var threadStyles = function(styleDict, threadName, rgb)
+  { styleDict[threadName] = {};
+    for (achievementLevel in achievementLevels)
+    { styleDict[threadName][achievementLevel] = 
+      "."+threadName+"_"+achievementLevel+" { fill: rgba("+rgb.join()+","+achievementLevels[achievementLevel]+"); }"
+    };
+  };
+  var writeStylesToDocument = function(styleDict)
+  { styleDictString = "";
+    for (threadName in styleDict)
+    { for (achievementLevel in achievementLevels)
+      { styleDictString += styleDict[threadName][achievementLevel]+"\n";
+      }
+    }
+    var styleElement = document.createElement("style");
+    styleElement.type = 'text/css';
+    styleElement.innerHTML = styleDictString;
+    document.getElementsByTagName('head')[0].appendChild(styleElement);
+  };
+//  threadStyles(styleDict, "Mathematics", [0,0,100]);
+  var buildThreadTree = function(widgetParams, threadTree)
+  { var threadCount = countKeys(threadTree);
+  
+    var sliceBiteSize = (widgetParams.outerRadius - widgetParams.innerRadius) / 5;
+    var threadAngleSize = 360/threadCount;
+
+    var currentAngle = 0;
+ 
+    var pieBiteData = []
+  
+    for (threadName in threadTree)
+    { var threadData    = threadTree[threadName];
+      var threadItems   = threadData['pieSlices'];
+      var itemCount     = countKeys(threadItems);
+      var itemAngleSize = threadAngleSize / itemCount;
+      
+      if (itemAngleSize < 1.1)
+      { alert("There are too many items on this graphic to display well :)");
+      }
+      
+      threadStyles(styleDict, threadName, threadData['rgb'])
+
+      for (threadItem in threadItems)
+      { var innerRadiusDynamic = widgetParams.innerRadius;
+        pieSlice = threadItems[threadItem];
+        for (pieBiteName in pieSlice)
+        { pieBite = pieSlice[pieBiteName]
+          pieBite.innerRadius   = innerRadiusDynamic;
+          pieBite.outerRadius   = innerRadiusDynamic + sliceBiteSize;
+          pieBite.startAngle    = currentAngle;
+          pieBite.endAngle      = currentAngle        + itemAngleSize;
+          pieBite.biteClass     = threadName+"_"+pieBite[0]
+          
+          var arcD3 = d3.svg.arc()
+              .innerRadius(pieBite.innerRadius)
+              .outerRadius(pieBite.outerRadius)
+              .startAngle(pieBite.startAngle * (pi/180)) //converting from degs to radians
+              .endAngle(pieBite.endAngle * (pi/180)) //just radians
+          pieBite.arcD3 = arcD3
+          vis.append("path")
+              .attr("d", arcD3)
+              .attr("transform", "translate(200,200)")
+              .attr("class", pieBite.biteClass)
+              .style("stroke", "white")
+              .attr("tooltip", pieBite[1])
+              .on("click", function(d,i){alert(d.tooltip);})
+          .append("svg:title").text(pieBite[1]);
+          
+          
+          
+          innerRadiusDynamic += sliceBiteSize;
+        }
+        currentAngle += itemAngleSize;
+        
+      }
+    }
+    currentAngle += threadAngleSize;
+    return pieBiteData;
+  };
+  testThreadTreeData =
+  { "Mathematics": 
+    { rgb:[0,0,100],
+      pieSlices:
+      { "DifferentialEquations":
+        [ ["secure", "Some Tooltip"],
+          ["secure", "Another tooltip"],
+          ["consolidating", "read this"],
+          ["consolidating", "awesome tooltip"],
+          ["developing", "again"]
+        ],
+        "DifferentialEquations1":
+        [ ["secure", "Some Tooltip"],
+          ["secure", "Another tooltip"],
+          ["consolidating", "read this"],
+          ["consolidating", "awesome tooltip"],
+          ["developing", "again"]
+        ],
+        "DifferentialEquations2":
+        [ ["secure", "Some Tooltip"],
+          ["secure", "Another tooltip"],
+          ["consolidating", "read this"],
+          ["consolidating", "awesome tooltip"],
+          ["developing", "again"]
+        ],
+        "DifferentialEquations3":
+        [ ["secure", "Some Tooltip"],
+          ["secure", "Another tooltip"],
+          ["consolidating", "read this"],
+          ["consolidating", "awesome tooltip"],
+          ["developing", "again"]
+        ],
+        "Algebra":
+        [ ["secure", "Some Tooltip"],
+          ["secure", "Another tooltip"],
+          ["consolidating", "read this"],
+          ["consolidating", "awesome tooltip"],
+          ["developing", "again"]
+        ],
+        "Calculus": 
+        [ ["secure", "Some Tooltip"],
+          ["secure", "Another tooltip"],
+          ["consolidating", "read this"],
+          ["consolidating", "awesome tooltip"],
+          ["developing", "again"]
+        ]
+      }
+    }, 
+    "Literature": 
+    { rgb:[0,100, 0],
+      pieSlices:
+      { "Reading":
+        [ ["secure", "Some Tooltip"],
+          ["secure", "Another tooltip"],
+          ["consolidating", "read this"],
+          ["consolidating", "awesome tooltip"],
+          ["developing", "again"]
+        ],
+        "Writing":
+        [ ["secure", "Some Tooltip"],
+          ["secure", "Another tooltip"],
+          ["consolidating", "read this"],
+          ["consolidating", "awesome tooltip"],
+          ["developing", "again"]
+        ],
+        "Aural": 
+        [ ["secure", "Some Tooltip"],
+          ["secure", "Another tooltip"],
+          ["consolidating", "read this"],
+          ["consolidating", "awesome tooltip"],
+          ["developing", "again"]
+        ]
+      }        
+    } 
+  };
+  pieBiteData = buildThreadTree(
+    { "innerRadius": 50,
+      "outerRadius": 200
+    }, 
+    testThreadTreeData
+  );
+  
+  console.log(testThreadTreeData);
+  writeStylesToDocument(styleDict);
+   
+  //Trying to use d£ properly
+  /*pieBitesD3 = vis.selectAll("path")
+    .data(pieBiteData);
+  pieBitesD3.enter().append("path")
+    .attr("transform", "translate(200, 200)")
+    .style("stroke", "white");
+  pieBitesD3
+    .attr("class", function(d){ return d.biteClass})
+    .attr("d", function(d) {return d.arcD3; });
+  pieBitesD3.exit().remove();
+  */
+  var arcEarly = d3.svg.arc()
+      .innerRadius(50)
+      .outerRadius(80)
+      .startAngle(0 * (pi/180)) //converting from degs to radians
+      .endAngle(5 * (pi/180)); //just radians
+  vis.append("path")
+      .attr("d", arcEarly)
+      .attr("transform", "translate(200,200)")
+      .attr("class", "developing")
+      .style("stroke", "white")
+  .append("svg:title").text("I can collect objects and ask questions to gather information, organising and displaying my findings in different ways.");
+
+      
+
+};
+
+window.onload = ljdj.init();
